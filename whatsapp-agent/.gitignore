@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+data/auth/*
+!data/auth/.gitkeep
+data/logs/*
+!data/logs/.gitkeep
+*.tsbuildinfo
