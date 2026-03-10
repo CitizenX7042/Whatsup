@@ -12,6 +12,7 @@ export class AzureSqlChatRepository implements IChatRepository {
         .query(
           "IF NOT EXISTS (SELECT 1 FROM chats WHERE id = @chatId) INSERT INTO chats (id) VALUES (@chatId)"
         );
+      logger.info({ chatId }, "Azure SQL: ensureChat ok");
     } catch (err) {
       logger.error({ err, chatId }, "AzureSqlChatRepository.ensureChat failed");
       throw err;

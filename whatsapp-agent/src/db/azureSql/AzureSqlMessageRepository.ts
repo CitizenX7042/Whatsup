@@ -26,6 +26,7 @@ export class AzureSqlMessageRepository implements IMessageRepository {
           `INSERT INTO messages (id, chat_id, direction, text, raw_payload)
            VALUES (@id, @chatId, @direction, @text, @rawPayload)`
         );
+      logger.info({ id, chatId, direction }, "Azure SQL: insertMessage ok");
     } catch (err) {
       logger.error({ err, id, chatId }, "AzureSqlMessageRepository.insertMessage failed");
       throw err;

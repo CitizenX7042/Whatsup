@@ -20,6 +20,7 @@
     "pino-pretty": "^11.3.0"
   },
   "devDependencies": {
+    "@types/mssql": "^9.1.5",
     "@types/node": "^22.10.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
