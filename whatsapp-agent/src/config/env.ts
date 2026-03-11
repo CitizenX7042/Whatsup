@@ -67,6 +67,15 @@ export const config = {
     .map((p) => resolvePath(p.trim()))
     .filter(Boolean),
 
+  azureOpenAI: {
+    endpoint: getEnvOptional("AZURE_OPENAI_ENDPOINT", "").trim(),
+    apiKey: getEnvOptional("AZURE_OPENAI_API_KEY", "").trim(),
+    deployment: getEnvOptional("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini").trim(),
+    apiVersion: getEnvOptional("AZURE_OPENAI_API_VERSION", "2024-02-01"),
+    timeoutMs: parseInt(getEnvOptional("AZURE_OPENAI_TIMEOUT_MS", "60000"), 10),
+    maxRetries: parseInt(getEnvOptional("AZURE_OPENAI_MAX_RETRIES", "3"), 10),
+  },
+
   azureSql: {
     server: getEnvOptional("AZURE_SQL_SERVER", "").trim(),
     database: getEnvOptional("AZURE_SQL_DATABASE", "").trim(),

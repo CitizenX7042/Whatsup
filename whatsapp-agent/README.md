@@ -28,7 +28,63 @@ This is a **personal agent** for your own use—not multi-user or SaaS.
 |-----------|----------------|-------------------------|
 | **Transport** | `MockConsoleTransport` – read/write from terminal | `WhatsAppBaileysTransport` – placeholder, not yet implemented |
 | **Persistence** | `InMemoryChatRepository` / `InMemoryMessageRepository` | `AzureSqlChatRepository` / `AzureSqlMessageRepository` |
-| **LLM** | `MockLlmClient` – deterministic test responses | OpenAI provider or `AzureOpenAiClient` (placeholder) |
+| **LLM** | `MockLlmClient` – deterministic test responses | Azure OpenAI or OpenAI provider |
+
+---
+
+## Azure OpenAI Setup
+
+### Create the resource
+
+You can create an Azure OpenAI resource in either:
+
+- **Azure Portal** – Create resource → Search "Azure OpenAI" → Create
+- **Azure AI Studio / Azure AI Foundry** – [portal.azure.com](https://portal.azure.com) → Create a resource → "Azure OpenAI"
+
+### Steps
+
+1. **Create the resource**
+   - Name it (e.g. `my-openai`)
+   - Choose subscription, resource group, region
+   - Create
+
+2. **Deploy a model**
+   - Open the resource → **Model deployments** (or **Azure AI Studio** → **Deployments**)
+   - **+ Create new deployment**
+   - Pick a model (e.g. `gpt-4o-mini` or `gpt-4o`)
+   - Set deployment name (e.g. `gpt-4o-mini`)
+   - Deploy
+
+3. **Get credentials**
+   - **Keys and Endpoint** (or **Resource management** → **Keys and endpoint**)
+   - Copy:
+     - **Endpoint** (e.g. `https://my-openai.openai.azure.com`)
+     - **Key 1** (API key)
+
+### .env variables
+
+Add to `.env`:
+
+```
+AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com
+AZURE_OPENAI_API_KEY=your-key-here
+AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
+```
+
+Optional (defaults shown):
+
+```
+AZURE_OPENAI_API_VERSION=2024-02-01
+AZURE_OPENAI_TIMEOUT_MS=60000
+AZURE_OPENAI_MAX_RETRIES=3
+```
+
+### Verify
+
+Start the app and check logs for:
+
+- `"llm": "azure-openai"`
+- `Azure OpenAI request completed` after sending a message
 
 ---
 
@@ -189,5 +245,4 @@ whatsapp-agent/
 ## Known Limitations
 
 - WhatsApp transport is a placeholder
-- Azure OpenAI client is a placeholder
 - Tools are registered but not invoked by the LLM (no function-calling yet)

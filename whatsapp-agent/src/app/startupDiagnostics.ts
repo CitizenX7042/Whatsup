@@ -1,4 +1,4 @@
-import { isAzureSqlConfigured, useInMemoryDb, useMockTransport, useMockLlm } from "../config/env.js";
+import { config, isAzureSqlConfigured, useInMemoryDb, useMockTransport, useMockLlm } from "../config/env.js";
 import { loadMemoryFromFiles } from "../memory/memoryLoader.js";
 import { verifyConnection } from "../db/azureSql/connection.js";
 import { logger } from "../utils/logger.js";
@@ -16,7 +16,11 @@ export interface StartupDiagnostics {
 export async function runStartupDiagnostics(): Promise<StartupDiagnostics> {
   const transport = useMockTransport() ? "mock" : "whatsapp";
   const persistence = useInMemoryDb() ? "in-memory" : "azure-sql";
-  const llm = useMockLlm() ? "mock" : (process.env.AZURE_OPENAI_API_KEY ? "azure-openai" : "openai");
+  const llm = useMockLlm()
+    ? "mock"
+    : (config.azureOpenAI.endpoint && config.azureOpenAI.apiKey
+        ? "azure-openai"
+        : "openai");
 
   let azureSqlConnected = false;
   if (isAzureSqlConfigured()) {
