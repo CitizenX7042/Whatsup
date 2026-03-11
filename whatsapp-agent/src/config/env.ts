@@ -38,10 +38,18 @@ export function useMockTransport(): boolean {
   return getEnvOptional("TRANSPORT", "mock") !== "whatsapp";
 }
 
-/** Use mock LLM when no API key is configured */
+/** Azure OpenAI is configured when endpoint and apiKey are both present */
+export function isAzureOpenAIConfigured(): boolean {
+  const endpoint = (process.env.AZURE_OPENAI_ENDPOINT ?? "").trim();
+  const apiKey = (process.env.AZURE_OPENAI_API_KEY ?? "").trim();
+  return !!(endpoint && apiKey);
+}
+
+/** Use mock LLM when no LLM API key is configured (Azure OpenAI or OpenAI) */
 export function useMockLlm(): boolean {
-  const key = process.env.AZURE_OPENAI_API_KEY ?? process.env.LLM_API_KEY ?? "";
-  return !key.trim();
+  const azureKey = (process.env.AZURE_OPENAI_API_KEY ?? "").trim();
+  const openaiKey = (process.env.LLM_API_KEY ?? "").trim();
+  return !(azureKey || openaiKey);
 }
 
 export const config = {
@@ -74,6 +82,10 @@ export const config = {
     apiVersion: getEnvOptional("AZURE_OPENAI_API_VERSION", "2024-02-01"),
     timeoutMs: parseInt(getEnvOptional("AZURE_OPENAI_TIMEOUT_MS", "60000"), 10),
     maxRetries: parseInt(getEnvOptional("AZURE_OPENAI_MAX_RETRIES", "3"), 10),
+    inputPricePer1M: parseFloat(getEnvOptional("AZURE_OPENAI_INPUT_PRICE_PER_1M", "0.15")) || 0.15,
+    outputPricePer1M: parseFloat(getEnvOptional("AZURE_OPENAI_OUTPUT_PRICE_PER_1M", "0.60")) || 0.6,
+    cachedInputPricePer1M:
+      parseFloat(getEnvOptional("AZURE_OPENAI_CACHED_INPUT_PRICE_PER_1M", "0.075")) || 0.075,
   },
 
   azureSql: {

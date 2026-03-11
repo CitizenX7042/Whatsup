@@ -1,8 +1,8 @@
 /**
  * LLM client factory - returns the configured provider.
- * Priority: Azure OpenAI > OpenAI > Mock
+ * Priority: Azure OpenAI (when configured) > OpenAI > Mock
  */
-import { config, useMockLlm } from "../config/env.js";
+import { config, useMockLlm, isAzureOpenAIConfigured } from "../config/env.js";
 import { MockLlmClient } from "./MockLlmClient.js";
 import { createOpenAIProvider } from "./providers/openAIProvider.js";
 import { createAzureOpenAIProvider } from "./providers/azureOpenAiProvider.js";
@@ -14,7 +14,7 @@ export function getLLMClient(): LLMClient {
   if (!client) {
     if (useMockLlm()) {
       client = new MockLlmClient();
-    } else if (config.azureOpenAI.endpoint && config.azureOpenAI.apiKey) {
+    } else if (isAzureOpenAIConfigured()) {
       client = createAzureOpenAIProvider();
     } else {
       client = createOpenAIProvider({

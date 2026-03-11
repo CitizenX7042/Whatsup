@@ -1,6 +1,8 @@
 import type { IncomingMessage } from "../transport/types.js";
 import type { IChatRepository, IMessageRepository } from "../db/interfaces.js";
 import type { LLMClient } from "../llm/types.js";
+import { formatUsageBlock } from "../llm/formatUsage.js";
+import { formatCost } from "../llm/costCalculator.js";
 import { buildContext } from "./contextBuilder.js";
 import { buildMessages } from "./promptBuilder.js";
 import { logger } from "../utils/logger.js";
@@ -33,16 +35,38 @@ export async function handleIncomingMessage(
   );
 
   const messages = buildMessages(context);
-  let responseText: string;
+  let response: Awaited<ReturnType<LLMClient["complete"]>>;
 
   try {
     logger.info(logCtx, "Gateway: LLM request start");
-    const response = await deps.llm.complete({ messages });
-    responseText = response.content.trim();
+    response = await deps.llm.complete({ messages });
     logger.info(logCtx, "Gateway: LLM request end");
   } catch (err) {
     logger.error({ ...logCtx, err }, "Gateway: LLM failed");
-    responseText = "Sorry, I couldn't process that. Please try again.";
+    response = {
+      content: "Sorry, I couldn't process that. Please try again.",
+      model: "unknown",
+    };
+  }
+
+  const responseText = response.content.trim();
+  const usageBlock = formatUsageBlock(response);
+  const displayText = usageBlock ? `${responseText}${usageBlock}` : responseText;
+
+  if (response.usage) {
+    logger.info(
+      {
+        ...logCtx,
+        promptTokens: response.usage.promptTokens,
+        completionTokens: response.usage.completionTokens,
+        totalTokens: response.usage.totalTokens,
+        estimatedCost:
+          response.estimatedCost !== undefined
+            ? formatCost(response.estimatedCost)
+            : undefined,
+      },
+      "Gateway: token usage"
+    );
   }
 
   await deps.chatRepo.ensureChat(message.chatId);
@@ -54,6 +78,6 @@ export async function handleIncomingMessage(
     responseText
   );
 
-  await deps.sendReply(message.chatId, responseText);
+  await deps.sendReply(message.chatId, displayText);
   logger.info(logCtx, "Gateway: reply sent");
 }

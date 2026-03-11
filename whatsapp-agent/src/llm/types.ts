@@ -16,7 +16,9 @@ export interface LLMResponse {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    cachedTokens?: number;
   };
+  estimatedCost?: number;
 }
 
 export interface LLMClient {

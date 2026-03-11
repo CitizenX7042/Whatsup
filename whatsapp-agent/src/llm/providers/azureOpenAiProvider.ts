@@ -6,6 +6,7 @@ import { config } from "../../config/env.js";
 import { logger } from "../../utils/logger.js";
 import { LLMError } from "../../utils/errors.js";
 import { elapsedMs } from "../../utils/time.js";
+import { estimateCost, formatCost } from "../costCalculator.js";
 import type { LLMClient, LLMMessage, LLMRequest, LLMResponse } from "../types.js";
 
 function buildUrl(): string {
@@ -68,25 +69,57 @@ export function createAzureOpenAIProvider(): LLMClient {
           const data = (await res.json()) as {
             choices?: Array<{ message?: { content?: string } }>;
             model?: string;
-            usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+            usage?: {
+              prompt_tokens?: number;
+              completion_tokens?: number;
+              total_tokens?: number;
+              prompt_tokens_details?: { cached_tokens?: number };
+            };
           };
 
           const content = data.choices?.[0]?.message?.content ?? "";
-          logger.info(
-            { deployment: cfg.deployment, latency, attempt },
-            "Azure OpenAI request completed"
-          );
+          const usage = data.usage
+            ? {
+                promptTokens: data.usage.prompt_tokens ?? 0,
+                completionTokens: data.usage.completion_tokens ?? 0,
+                totalTokens: data.usage.total_tokens ?? 0,
+                cachedTokens: data.usage.prompt_tokens_details?.cached_tokens,
+              }
+            : undefined;
+
+          let estimatedCost: number | undefined;
+          if (usage && usage.totalTokens > 0) {
+            const costResult = estimateCost(
+              usage,
+              cfg.inputPricePer1M,
+              cfg.outputPricePer1M,
+              cfg.cachedInputPricePer1M
+            );
+            estimatedCost = costResult.estimatedCost;
+            logger.info(
+              {
+                deployment: cfg.deployment,
+                latency,
+                promptTokens: usage.promptTokens,
+                completionTokens: usage.completionTokens,
+                totalTokens: usage.totalTokens,
+                cachedTokens: usage.cachedTokens,
+                estimatedCost: formatCost(estimatedCost),
+              },
+              "Azure OpenAI: token usage and cost"
+            );
+          } else {
+            logger.info(
+              { deployment: cfg.deployment, latency, attempt },
+              "Azure OpenAI request completed"
+            );
+          }
 
           return {
             content,
             model: data.model ?? cfg.deployment,
-            usage: data.usage
-              ? {
-                  promptTokens: data.usage.prompt_tokens ?? 0,
-                  completionTokens: data.usage.completion_tokens ?? 0,
-                  totalTokens: data.usage.total_tokens ?? 0,
-                }
-              : undefined,
+            usage,
+            estimatedCost,
           };
         } catch (err) {
           lastError = err;

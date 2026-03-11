@@ -1,4 +1,4 @@
-import { config, isAzureSqlConfigured, useInMemoryDb, useMockTransport, useMockLlm } from "../config/env.js";
+import { config, isAzureSqlConfigured, isAzureOpenAIConfigured, useInMemoryDb, useMockTransport, useMockLlm } from "../config/env.js";
 import { loadMemoryFromFiles } from "../memory/memoryLoader.js";
 import { verifyConnection } from "../db/azureSql/connection.js";
 import { logger } from "../utils/logger.js";
@@ -18,9 +18,7 @@ export async function runStartupDiagnostics(): Promise<StartupDiagnostics> {
   const persistence = useInMemoryDb() ? "in-memory" : "azure-sql";
   const llm = useMockLlm()
     ? "mock"
-    : (config.azureOpenAI.endpoint && config.azureOpenAI.apiKey
-        ? "azure-openai"
-        : "openai");
+    : (isAzureOpenAIConfigured() ? "azure-openai" : "openai");
 
   let azureSqlConnected = false;
   if (isAzureSqlConfigured()) {
@@ -57,6 +55,21 @@ function logDiagnostics(d: StartupDiagnostics): void {
     },
     "Startup: active components"
   );
+
+  if (d.llm === "azure-openai") {
+    logger.info(
+      {
+        deployment: config.azureOpenAI.deployment,
+        endpointConfigured: !!config.azureOpenAI.endpoint,
+        apiVersion: config.azureOpenAI.apiVersion,
+      },
+      "Startup: Azure OpenAI LLM active"
+    );
+  } else if (d.llm === "mock") {
+    logger.info("Startup: Mock LLM active (set AZURE_OPENAI_API_KEY or LLM_API_KEY for real LLM)");
+  } else {
+    logger.info("Startup: OpenAI provider active");
+  }
 
   if (d.azureSqlConfigured) {
     if (d.azureSqlConnected) {
